@@ -44,3 +44,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return; // pass-through non-GET
   event.respondWith(cacheFirst(request));
 });
+
+self.addEventListener('message', (event) => {
+    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  });

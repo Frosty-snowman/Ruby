@@ -24,6 +24,8 @@ let deferredInstallPrompt;
     deferredInstallPrompt = null; // cannot reuse after prompt shown
     document.getElementById('installBtn')?.classList.add('hidden');
   });
+
+
   if ('setAppBadge' in navigator) {
     navigator.setAppBadge(12);
     // navigator.clearAppBadge(); // to clear
@@ -33,3 +35,43 @@ let deferredInstallPrompt;
     window.dispatchEvent(new CustomEvent('open-cookie-modal'));
     // or if using a CMP SDK, call its “reopen”/“showConsentTool” method here.
   });
+
+
+
+  document.getElementById('enableNotifications')?.addEventListener('click', async () => {
+    if (!('Notification' in window)) return alert('Notifications not supported.');
+    if (Notification.permission === 'granted') return alert('Already enabled!');
+    if (Notification.permission === 'default') {
+      const perm = await Notification.requestPermission();
+      if (perm === 'granted') new Notification('Thanks! Notifications enabled.');
+      return;
+    }
+    // denied
+    alert('Notifications are blocked. Please enable them in your browser site settings.');
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('SW controlling this page changed (updated).');
+    });
+  
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (!reg) return;
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW?.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // new SW is waiting
+            const btn = document.getElementById('refreshForUpdate');
+            btn?.classList.remove('hidden');
+          }
+        });
+      });
+    });
+  }
+  
+  document.getElementById('refreshForUpdate')?.addEventListener('click', async () => {
+    const reg = await navigator.serviceWorker.getRegistration();
+    reg?.waiting?.postMessage({ type: 'SKIP_WAITING' });
+  });
+  
